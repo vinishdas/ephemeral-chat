@@ -1,24 +1,65 @@
-import { useState } from "react";
-import { useWebSocket } from "../hooks/useWebSocket";
+// src/components/JoinRoomForm.tsx
+import { useState, useEffect } from "react";
+import { useAppContext } from "../AppContext";
+import type { RoomState, Participant } from "../types/types";
 
 interface Props {
-  onJoinedRoom: (room: { roomName: string; expiresAt: number; roomCode: string }) => void;
+  onRoomJoined: (room: RoomState, nickname: string) => void;
 }
 
-export default function JoinRoomForm({ onJoinedRoom }: Props) {
-  const { send, onMessage } = useWebSocket(import.meta.env.VITE_WS_URL);
+export default function JoinRoomForm({ onRoomJoined }: Props) {
+  const { send, onMessage, userPublicKeyJwk, userKeyPair, username } = useAppContext();
   const [roomCode, setRoomCode] = useState("");
-  const [nickname, setNickname] = useState("");
 
-  onMessage((msg) => {
-    if (msg.type === "joined_room") {
-      onJoinedRoom({ ...msg.payload, roomCode });
-    }
-  });
+  useEffect(() => {
+    // Directly return the cleanup function from onMessage
+    return onMessage((msg) => {
+      // Note: We only act on the "joined_room" event IF the roomCode
+      // matches the one we *just* tried to join.
+      if (msg.type === "joined_room" && msg.payload.roomCode === roomCode) {
+        
+        const { roomName, expiresAt } = msg.payload;
+
+        const self: Participant = {
+          nickname: username,
+          publicKey: userKeyPair!.publicKey,
+          publicKeyJwk: userPublicKeyJwk!,
+        };
+
+        const newRoom: RoomState = {
+          roomCode,
+          roomName,
+          expiresAt,
+          participants: new Map([[username, self]]),
+          messages: [{ 
+            id: crypto.randomUUID(), 
+            sender: "System", 
+            text: `Joined room ${roomName}. Waiting for key exchange...`,
+            isSystem: true 
+          }],
+          roomSecret: null,
+          selfNickname: username,
+        };
+
+        onRoomJoined(newRoom, username);
+      }
+    });
+  }, [onMessage, onRoomJoined, username, roomCode, userKeyPair, userPublicKeyJwk]);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    send("join_room", { roomCode, nickname });
+    if (!roomCode.trim() || !username.trim() || !userPublicKeyJwk) {
+       if (!username.trim()) {
+        alert("Please set your username first.");
+      }
+      return;
+    }
+
+    send("join_room", {
+      roomCode,
+      nickname: username,
+      publicKeyJwk: userPublicKeyJwk,
+    });
   };
 
   return (
@@ -28,13 +69,6 @@ export default function JoinRoomForm({ onJoinedRoom }: Props) {
         placeholder="Room Code"
         value={roomCode}
         onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-        className="border p-2 rounded"
-        required
-      />
-      <input
-        placeholder="Your Nickname"
-        value={nickname}
-        onChange={(e) => setNickname(e.target.value)}
         className="border p-2 rounded"
         required
       />
