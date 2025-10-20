@@ -9,28 +9,31 @@ interface Props {
 
 export default function RoomTabs({ rooms, activeRoomCode, onSelectRoom }: Props) {
   if (rooms.length === 0) {
-    return <div className="text-sm text-gray-500">No active rooms.</div>;
+    return <div className="text-sm text-zinc-500 text-center p-4">No active rooms.</div>;
   }
 
-  // Use a div wrapper for card-like layout
   return (
     <div className="flex flex-col gap-2">
       {rooms.map((r) => (
-        // Each item is now a "card"
-        <div
+        <button
           key={r.roomCode}
-          className={`cursor-pointer p-3 rounded-lg border ${
-            r.roomCode === activeRoomCode
-              ? "bg-blue-600 text-white border-blue-700"
-              : "bg-white hover:bg-gray-100 border-gray-200"
-          }`}
+          type="button"
+          // Conditional styling for active/inactive tabs
+          className={`
+            w-full p-3 rounded-lg border text-left transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-[--color-primary-500]
+            ${
+              r.roomCode === activeRoomCode
+                ? 'bg-gradient-to-r from-[--color-primary-700]/50 to-[--color-primary-800]/50 border-[--color-primary-600] text-zinc-50 shadow-md' // Active: Purple gradient/border
+                : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700/60 hover:border-zinc-600' // Inactive: Darker gray
+            }
+          `}
           onClick={() => onSelectRoom(r.roomCode)}
         >
-          <div className="font-bold">{r.roomName}</div>
-          <div className={`text-sm ${r.roomCode === activeRoomCode ? "opacity-80" : "text-gray-500"}`}>
+          <div className="font-semibold text-base truncate">{r.roomName}</div> {/* Truncate long names */}
+          <div className={`text-xs font-mono mt-0.5 ${r.roomCode === activeRoomCode ? 'text-[--color-primary-300]' : 'text-zinc-500'}`}>
             {r.roomCode}
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

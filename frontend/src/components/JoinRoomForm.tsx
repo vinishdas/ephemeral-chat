@@ -11,69 +11,55 @@ export default function JoinRoomForm({ onRoomJoined }: Props) {
   const { send, onMessage, userPublicKeyJwk, userKeyPair, username } = useAppContext();
   const [roomCode, setRoomCode] = useState("");
 
+  // ... (useEffect and handleJoin logic remain the same) ...
   useEffect(() => {
-    // Directly return the cleanup function from onMessage
+    const upperCaseRoomCode = roomCode.toUpperCase();
     return onMessage((msg) => {
-      // Note: We only act on the "joined_room" event IF the roomCode
-      // matches the one we *just* tried to join.
-      if (msg.type === "joined_room" && msg.payload.roomCode === roomCode) {
-        
+      if (msg.type === "joined_room" && msg.payload.roomCode === upperCaseRoomCode) {
         const { roomName, expiresAt } = msg.payload;
-
-        const self: Participant = {
-          nickname: username,
-          publicKey: userKeyPair!.publicKey,
-          publicKeyJwk: userPublicKeyJwk!,
-        };
-
-        const newRoom: RoomState = {
-          roomCode,
-          roomName,
-          expiresAt,
-          participants: new Map([[username, self]]),
-          messages: [{ 
-            id: crypto.randomUUID(), 
-            sender: "System", 
-            text: `Joined room ${roomName}. Waiting for key exchange...`,
-            isSystem: true 
-          }],
-          roomSecret: null,
-          selfNickname: username,
-        };
-
+        const self: Participant = { nickname: username, publicKey: userKeyPair!.publicKey, publicKeyJwk: userPublicKeyJwk!, };
+        const newRoom: RoomState = { roomCode: upperCaseRoomCode, roomName, expiresAt, participants: new Map([[username, self]]), messages: [{ id: crypto.randomUUID(), sender: "System", text: `Joined room ${roomName}. Waiting for key exchange...`, isSystem: true }], roomSecret: null, selfNickname: username, };
         onRoomJoined(newRoom, username);
       }
     });
-  }, [onMessage, onRoomJoined, username, roomCode, userKeyPair, userPublicKeyJwk]);
+   }, [onMessage, onRoomJoined, username, roomCode, userKeyPair, userPublicKeyJwk]);
 
-  const handleJoin = (e: React.FormEvent) => {
+   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomCode.trim() || !username.trim() || !userPublicKeyJwk) {
-       if (!username.trim()) {
-        alert("Please set your username first.");
-      }
-      return;
+       if (!username.trim()) { alert("Please set your username first."); }
+       return;
     }
-
-    send("join_room", {
-      roomCode,
-      nickname: username,
-      publicKeyJwk: userPublicKeyJwk,
-    });
-  };
+    send("join_room", { roomCode: roomCode.toUpperCase(), nickname: username, publicKeyJwk: userPublicKeyJwk });
+   };
 
   return (
-    <form onSubmit={handleJoin} className="p-4 flex flex-col gap-3 border rounded-xl bg-white shadow">
-      <h2 className="text-lg font-bold">Join Room</h2>
-      <input
-        placeholder="Room Code"
-        value={roomCode}
-        onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-        className="border p-2 rounded"
-        required
-      />
-      <button type="submit" className="bg-green-600 text-white p-2 rounded hover:bg-green-700">
-        Join Room
+    // Card-like styling for dark mode with backdrop blur
+    <form onSubmit={handleJoin} className="p-6 flex flex-col gap-4 border border-zinc-700 rounded-xl bg-zinc-900/80 backdrop-blur-sm shadow-lg">
+      <h2 className="text-xl font-bold text-center text-[--color-primary-400]">Join Existing Room</h2>
+      {/* Room Code Input */}
+       <div>
+        <label htmlFor="join-room-code" className="block text-sm font-medium text-zinc-400 mb-1">Room Code</label>
+        <input
+            id="join-room-code"
+            placeholder="ABCDEF"
+            value={roomCode}
+            onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+            // Darker input + specific styles for room code
+            className="w-full bg-zinc-700 border-zinc-600 focus:border-[--color-primary-500] focus:ring-[--color-primary-500] font-mono tracking-widest text-lg text-center"
+            required
+            maxLength={6}
+            autoCapitalize="characters"
+          />
+       </div>
+      {/* Submit Button */}
+      <button
+        type="submit"
+        // Secondary button style for dark mode
+        className="w-full mt-2 bg-zinc-700 text-zinc-200 hover:bg-zinc-600/80 focus:ring-zinc-500"
+        disabled={!username.trim()}
+      >
+        Join Room 🚪
       </button>
     </form>
   );

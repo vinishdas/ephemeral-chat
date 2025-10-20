@@ -16,22 +16,21 @@ export default function RoomDashboard({
   setActiveRoomCode,
   sendMessage,
 }: Props) {
-  
   const activeRoomState = activeRoomCode ? rooms.get(activeRoomCode) : null;
 
   return (
-    <div className="flex-1 flex h-full"> {/* Use flex-1 to fill parent */}
+    // Main flex container: column on mobile, row on desktop. Ensure it grows.
+    <div className="flex-1 flex flex-col md:flex-row min-h-0"> {/* Added min-h-0 for flex children */}
       {/* --- Left Panel: Room List --- */}
-      <div className="w-1/3 border-r bg-gray-50 rounded-l-xl flex flex-col">
-        <div className="p-4 border-b">
-          <h1 className="text-xl font-bold">Your Active Rooms</h1>
+      {/* Defined height/width, allow shrinking */}
+      <div className="w-full md:w-1/3 lg:w-1/4 h-[35%] md:h-full flex flex-col border-b md:border-b-0 md:border-r border-zinc-700 bg-zinc-900 shrink-0">
+        <div className="p-4 border-b border-zinc-700 shrink-0"> {/* Prevent header shrinking */}
+          <h2 className="text-lg font-bold text-zinc-100">Active Rooms</h2>
         </div>
-        
-        {/* Forms are now removed from here */}
-
-        <div className="flex-1 p-4 overflow-y-auto">
-          <RoomTabs 
-            rooms={Array.from(rooms.values())} 
+        {/* Scrollable area */}
+        <div className="flex-1 p-3 overflow-y-auto min-h-0"> {/* Added min-h-0 */}
+          <RoomTabs
+            rooms={Array.from(rooms.values())}
             activeRoomCode={activeRoomCode}
             onSelectRoom={setActiveRoomCode}
           />
@@ -39,16 +38,24 @@ export default function RoomDashboard({
       </div>
 
       {/* --- Right Panel: Active Chat --- */}
-      <div className="w-2/3 flex flex-col">
+      {/* Ensure this panel grows and handles overflow */}
+      <div className="flex-1 w-full md:w-2/3 lg:w-3/4 flex flex-col bg-zinc-800/30 min-h-0 min-w-0"> {/* Added min-h-0, min-w-0 */}
         {activeRoomState ? (
-          <ChatRoom 
+          <ChatRoom
             key={activeRoomState.roomCode}
             roomState={activeRoomState}
             onSendMessage={sendMessage}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            {rooms.size > 0 ? "Select a room to start chatting." : "No active rooms."}
+          <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 p-6 text-center">
+            <span className="text-xl font-medium mb-2">
+              {rooms.size > 0 ? "Select a Room" : "No Active Rooms"}
+            </span>
+            <span className="text-sm">
+              {rooms.size > 0
+                ? "Choose a room from the list to start chatting."
+                : "Go back to the lobby to create or join one."}
+            </span>
           </div>
         )}
       </div>

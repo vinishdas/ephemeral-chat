@@ -4,28 +4,36 @@ import type { ReactNode } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { generateEcdhKeyPair, exportKey } from "./utils/crypto";
 
-// Define the shape of the context
+// Define the shape of the context (no changes needed here)
 interface AppContextType {
   send: (type: string, payload: any) => void;
   onMessage: (cb: (msg: any) => void) => () => void;
   isConnected: boolean;
   userKeyPair: CryptoKeyPair | null;
   userPublicKeyJwk: JsonWebKey | null;
-  username: string; // Added username
-  setUsername: (name: string) => void; // Added setter
+  username: string;
+  setUsername: (name: string) => void;
 }
 
-// Create the context
 const AppContext = createContext<AppContextType | null>(null);
 
-// Create the provider component
+// Styled Loading component for dark theme
+function AppLoader() {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950 text-zinc-100">
+      {/* Simple animated spinner using borders */}
+      <div className="h-12 w-12 animate-spin rounded-full border-4 border-solid border-[--color-primary-500] border-t-transparent mb-4"></div>
+      <p className="text-zinc-400 text-lg">Connecting & Generating Keys...</p>
+    </div>
+  );
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const { send, onMessage, isConnected } = useWebSocket(import.meta.env.VITE_WS_URL);
   const [userKeyPair, setUserKeyPair] = useState<CryptoKeyPair | null>(null);
   const [userPublicKeyJwk, setUserPublicKeyJwk] = useState<JsonWebKey | null>(null);
-  const [username, setUsername] = useState(""); // State for username
+  const [username, setUsername] = useState("");
 
-  // Generate the user's master key pair once on load
   useEffect(() => {
     async function initKeys() {
       const keys = await generateEcdhKeyPair();
@@ -46,15 +54,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUsername,
   };
 
-  // Wait until keys are generated before rendering the app
+  // Show loader until connected and keys are ready
   return (
     <AppContext.Provider value={value}>
-      {isConnected && userKeyPair ? children : <div className="p-4">Connecting to server and generating keys...</div>}
+      {isConnected && userKeyPair ? children : <AppLoader />}
     </AppContext.Provider>
   );
 }
 
-// Create a custom hook to easily consume the context
+// useAppContext hook (no changes needed)
 export function useAppContext() {
   const context = useContext(AppContext);
   if (!context) {
